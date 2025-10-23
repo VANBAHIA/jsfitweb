@@ -1,0 +1,642 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+// ========== ENUMS ==========
+enum TipoPessoa {
+  FISICA
+  JURIDICA
+}
+
+enum TipoContato {
+  EMAIL
+  TELEFONE_FIXO
+  CELULAR
+}
+
+enum Situacao {
+  ATIVO
+  INATIVO
+}
+
+enum DiaSemana {
+  DOMINGO
+  SEGUNDA
+  TERCA
+  QUARTA
+  QUINTA
+  SEXTA
+  SABADO
+}
+
+enum TipoFrequencia {
+  MANUAL
+  AUTOMATICA
+  IMPORTADA
+}
+
+enum Periodicidade {
+  MENSAL
+  BIMESTRAL
+  TRIMESTRAL
+  QUADRIMESTRAL
+  SEMESTRAL
+  ANUAL
+  MESES
+  DIAS
+}
+
+enum TipoCobranca {
+  RECORRENTE
+  UNICA
+}
+
+// ========== TYPES ==========
+type Endereco {
+  logradouro String
+  cep        String
+  cidade     String
+  uf         String
+}
+
+type Contato {
+  tipo  TipoContato
+  valor String
+}
+
+type Responsavel {
+  nome     String
+  contatos Contato[]
+}
+
+type Horario {
+  local          String
+  diasSemana     DiaSemana[]
+  horarioEntrada String
+  horarioSaida   String
+}
+
+type ControleAcesso {
+  senha             String
+  impressaoDigital1 String?
+  impressaoDigital2 String?
+}
+
+// ========== EMPRESA (BASE DO SISTEMA MULTI-TENANT) ==========
+model Empresa {
+  id                 String  @id @default(auto()) @map("_id") @db.ObjectId
+  codigo             String  @unique
+  razaoSocial        String
+  nomeFantasia       String?
+  cnpj               String  @unique
+  inscricaoEstadual  String?
+  inscricaoMunicipal String?
+
+  endereco Json?
+  contatos Json?
+
+  responsavel String?
+  email       String?
+  site        String?
+
+  situacao String @default("ATIVO")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ✅ RELAÇÕES COM TODAS AS ENTIDADES
+  licencas       Licenca[]
+  usuarios       Usuario[]
+  pessoas        Pessoa[]
+  locais         Local[]
+  funcoes        Funcao[]
+  planos         Plano[]
+  descontos      Desconto[]
+  turmas         Turma[]
+  alunos         Aluno[]
+  funcionarios   Funcionario[]
+  matriculas     Matricula[]
+  frequencias    Frequencia[]
+  visitantes     Visitante[]
+  contasPagar    ContaPagar[]
+  contasReceber  ContaReceber[]
+  caixas         Caixa[]
+
+  @@map("empresas")
+}
+
+// ========== LICENÇAS ==========
+model Licenca {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  chave String @unique
+  tipo  String
+
+  dataInicio    DateTime
+  dataExpiracao DateTime
+
+  maxUsuarios Int @default(5)
+  maxAlunos   Int @default(100)
+
+  funcionalidades Json
+
+  situacao String @default("ATIVA")
+
+  observacoes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([empresaId])
+  @@map("licencas")
+}
+
+// ========== USUÁRIOS ==========
+model Usuario {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  nomeUsuario String @unique
+  nome        String
+  email       String @unique
+  senha       String
+
+  perfil String @default("USUARIO")
+
+  permissoes Json @default("{\"modulos\":{},\"acoes_especiais\":[]}")
+
+  foto     String?
+  telefone String?
+
+  situacao String @default("ATIVO")
+
+  ultimoAcesso DateTime?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([empresaId])
+  @@map("usuarios")
+}
+
+// ========== PESSOAS ==========
+model Pessoa {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  codigo   String
+  tipo     String
+  nome1    String
+  nome2    String?
+  doc1     String
+  doc2     String?
+  dtNsc    DateTime?
+  situacao String  @default("ATIVO")
+
+  enderecos Json[] @default([])
+  contatos  Json[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  alunos       Aluno[]
+  funcionarios Funcionario[]
+
+  @@unique([empresaId, codigo])
+  @@unique([empresaId, doc1])
+  @@index([empresaId])
+  @@map("pessoas")
+}
+
+// ========== LOCAIS ==========
+model Local {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  nome   String
+  status String @default("ATIVO")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([empresaId])
+  @@map("locais")
+}
+
+// ========== FUNÇÕES ==========
+model Funcao {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  funcao String
+  status String @default("ATIVO")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  funcionarios Funcionario[]
+
+  @@unique([empresaId, funcao])
+  @@index([empresaId])
+  @@map("funcoes")
+}
+
+// ========== PLANOS ==========
+model Plano {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  codigo        String
+  nome          String
+  periodicidade Periodicidade
+  numeroMeses   Int?
+  numeroDias    Int?
+
+  tipoCobranca TipoCobranca @default(RECORRENTE)
+
+  valorMensalidade Float
+  status           String  @default("ATIVO")
+  descricao        String?
+
+  matriculas    Matricula[]
+  contasReceber ContaReceber[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId])
+  @@map("planos")
+}
+
+// ========== DESCONTOS ==========
+model Desconto {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  descricao  String
+  tipo       String
+  valor      Float
+  status     String      @default("ATIVO")
+  matriculas Matricula[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([empresaId])
+  @@map("descontos")
+}
+
+// ========== TURMAS ==========
+model Turma {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  nome        String
+  sexo        String
+  observacoes String?
+
+  horarios    Json[]
+  instrutores Json[]
+
+  status     String      @default("ATIVO")
+  matriculas Matricula[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, nome])
+  @@index([empresaId])
+  @@map("turmas")
+}
+
+// ========== ALUNOS ==========
+model Aluno {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  pessoaId  String @db.ObjectId
+  matricula String
+  pessoa    Pessoa @relation(fields: [pessoaId], references: [id], onDelete: Cascade)
+
+  vldExameMedico DateTime? @db.Date
+  vldAvaliacao   DateTime? @db.Date
+  objetivo       String?
+  profissao      String?
+  empresa_nome   String?
+
+  responsavel Responsavel?
+  horarios    Horario[]
+
+  controleAcesso ControleAcesso
+
+  matriculas    Matricula[]
+  contasReceber ContaReceber[]
+  frequencias   Frequencia[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, matricula])
+  @@index([empresaId])
+  @@index([pessoaId])
+  @@map("alunos")
+}
+
+// ========== FUNCIONÁRIOS ==========
+model Funcionario {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  pessoaId String @unique @db.ObjectId
+  pessoa   Pessoa @relation(fields: [pessoaId], references: [id])
+
+  matricula    String
+  funcaoId     String   @db.ObjectId
+  funcao       Funcao   @relation(fields: [funcaoId], references: [id])
+  dataAdmissao DateTime
+  dataDemissao DateTime?
+  salario      Float?
+  situacao     String    @default("ATIVO")
+
+  visitantes Visitante[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, matricula])
+  @@index([empresaId])
+  @@index([funcaoId])
+  @@map("funcionarios")
+}
+
+// ========== MATRÍCULAS ==========
+model Matricula {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  codigo String
+
+  alunoId String @db.ObjectId
+  aluno   Aluno  @relation(fields: [alunoId], references: [id])
+
+  planoId String @db.ObjectId
+  plano   Plano  @relation(fields: [planoId], references: [id])
+
+  turmaId String? @db.ObjectId
+  turma   Turma?  @relation(fields: [turmaId], references: [id])
+
+  descontoId String?   @db.ObjectId
+  desconto   Desconto? @relation(fields: [descontoId], references: [id])
+
+  contasReceber ContaReceber[]
+
+  dataInicio    DateTime
+  dataFim       DateTime
+  diaVencimento Int?
+
+  valorMatricula Float
+  valorDesconto  Float @default(0)
+  valorFinal     Float
+
+  situacao         String  @default("ATIVA")
+  motivoInativacao String?
+
+  formaPagamento       String?
+  parcelamento         Int?      @default(1)
+  ultimaCobrancaGerada DateTime?
+  proximaCobrancaData  DateTime?
+
+  observacoes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, codigo])
+  @@index([empresaId])
+  @@index([alunoId])
+  @@map("matriculas")
+}
+
+// ========== FREQUÊNCIA ==========
+model Frequencia {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  alunoId       String         @db.ObjectId
+  data          DateTime
+  horarioInicio DateTime
+  horarioFim    DateTime?
+  presente      Boolean        @default(false)
+  observacao    String?
+  tipo          TipoFrequencia @default(MANUAL)
+  validadaPor   String?
+
+  aluno Aluno @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([empresaId])
+  @@index([alunoId, data])
+  @@index([data])
+  @@map("frequencias")
+}
+
+// ========== VISITANTES ==========
+model Visitante {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  nome           String
+  endereco       String?
+  bairro         String?
+  cidade         String?
+  uf             String?
+  cep            String?
+  telefone       String?
+  celular        String?
+  email          String?
+  sexo           String?
+  dataNascimento DateTime?
+  observacoes    String?
+
+  dataVisita DateTime
+
+  funcionarioId String?      @db.ObjectId
+  funcionario   Funcionario? @relation(fields: [funcionarioId], references: [id])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([empresaId])
+  @@index([funcionarioId])
+  @@map("visitantes")
+}
+
+// ========== CONTAS A PAGAR ==========
+model ContaPagar {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  numero String
+
+  fornecedorId  String? @db.ObjectId
+  funcionarioId String? @db.ObjectId
+
+  fornecedorNome String?
+  fornecedorDoc  String?
+
+  categoria String
+
+  valorOriginal Float
+  valorDesconto Float @default(0)
+  valorJuros    Float @default(0)
+  valorMulta    Float @default(0)
+  valorFinal    Float
+  valorPago     Float @default(0)
+  valorRestante Float
+
+  dataEmissao    DateTime  @default(now())
+  dataVencimento DateTime
+  dataPagamento  DateTime?
+
+  status String @default("PENDENTE")
+
+  descricao      String
+  observacoes    String?
+  formaPagamento String?
+  documento      String?
+
+  numeroParcela Int?
+  totalParcelas Int?
+
+  anexos Json[] @default([])
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, numero])
+  @@index([empresaId])
+  @@index([status])
+  @@map("contas_pagar")
+}
+
+// ========== CONTAS A RECEBER ==========
+model ContaReceber {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  numero String
+
+  alunoId String @db.ObjectId
+  aluno   Aluno  @relation(fields: [alunoId], references: [id], onDelete: Cascade)
+
+  planoId String? @db.ObjectId
+  plano   Plano?  @relation(fields: [planoId], references: [id], onDelete: SetNull)
+
+  descontoId String? @db.ObjectId
+
+  matriculaId String?    @db.ObjectId
+  matricula   Matricula? @relation(fields: [matriculaId], references: [id], onDelete: SetNull)
+
+  valorOriginal Float
+  valorDesconto Float @default(0)
+  valorFinal    Float
+  valorPago     Float @default(0)
+  valorRestante Float
+
+  dataEmissao    DateTime  @default(now())
+  dataVencimento DateTime
+  dataPagamento  DateTime?
+
+  status String @default("PENDENTE")
+
+  observacoes    String?
+  formaPagamento String?
+
+  numeroParcela Int?
+  totalParcelas Int?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, numero])
+  @@index([empresaId])
+  @@index([alunoId])
+  @@index([planoId])
+  @@index([matriculaId])
+  @@index([status])
+  @@map("contas_receber")
+}
+
+// ========== CAIXA ==========
+model Caixa {
+  id        String  @id @default(auto()) @map("_id") @db.ObjectId
+  empresaId String  @db.ObjectId
+  empresa   Empresa @relation(fields: [empresaId], references: [id], onDelete: Cascade)
+
+  numero String
+
+  dataAbertura    DateTime
+  horaAbertura    String
+  valorAbertura   Float
+  usuarioAbertura String
+
+  dataFechamento    DateTime?
+  horaFechamento    String?
+  valorFechamento   Float?
+  usuarioFechamento String?
+
+  totalEntradas Float  @default(0)
+  totalSaidas   Float  @default(0)
+  saldoFinal    Float?
+
+  status String @default("ABERTO")
+
+  movimentos Json[] @default([])
+
+  observacoes String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, numero])
+  @@index([empresaId])
+  @@index([status])
+  @@map("caixas")
+}
+
+// ========== USER (MANTER PARA COMPATIBILIDADE) ==========
+model User {
+  id        String    @id @default(auto()) @map("_id") @db.ObjectId
+  nome      String
+  email     String    @unique
+  dtNasc    DateTime?
+  password  String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  @@map("users")
+}

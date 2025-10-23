@@ -1,0 +1,46 @@
+{
+  "name": "jsfit-gestao",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext js,jsx --report-unused-disable-directives --max-warnings 0",
+    "format": "prettier --write \"src/**/*.{js,jsx,css,md}\"",
+    "clean": "rm -rf node_modules dist"
+  },
+  "dependencies": {
+    "@emotion/react": "^11.14.0",
+    "@emotion/styled": "^11.14.1",
+    "@mui/icons-material": "^7.3.4",
+    "@mui/material": "^7.3.4",
+    "axios": "^1.12.2",
+    "date-fns": "^4.1.0",
+    "lucide-react": "^0.545.0",
+    "multer": "^2.0.2",
+    "react": "^19.1.1",
+    "react-dom": "^19.1.1",
+    "react-input-mask": "^2.0.4",
+    "react-router-dom": "^7.9.4",
+    "recharts": "^3.2.1"
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.36.0",
+    "@types/react": "^19.1.16",
+    "@types/react-dom": "^19.1.9",
+    "@vitejs/plugin-react": "^5.0.4",
+    "autoprefixer": "^10.4.21",
+    "eslint": "^9.37.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "eslint-plugin-react-refresh": "^0.4.22",
+    "globals": "^16.4.0",
+    "postcss": "^8.5.6",
+    "prettier": "^3.6.2",
+    "tailwindcss": "^3.4.18",
+    "vite": "^7.1.7"
+  }
+}

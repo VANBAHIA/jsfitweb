@@ -20,7 +20,7 @@ app.use(cors({
   credentials: true
 }));
 
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 4000;
 
 // ✅ Agora servindo a pasta public fora do /src
 app.use('/imagens', express.static(path.join(__dirname, '../public/imagens')));
@@ -47,6 +47,7 @@ app.use((req, res, next) => {
 
 // Error handler
 app.use(errorHandler);
+
 
 // Iniciar servidor
 app.listen(PORT, () => {

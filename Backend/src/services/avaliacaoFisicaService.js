@@ -4,9 +4,7 @@ const alunoRepository = require('../repositories/alunoRepository');
 const ApiError = require('../utils/apiError');
 
 class AvaliacaoFisicaService {
-  /**
-   * 🧮 Gera o próximo código sequencial (AV00001 → AV00002)
-   */
+  // 🧮 Gera o próximo código sequencial
   async gerarProximoCodigo(empresaId) {
     const ultima = await avaliacaoFisicaRepository.buscarUltimaCodigo(empresaId);
     if (!ultima || !ultima.codigo) return 'AV00001';
@@ -15,17 +13,13 @@ class AvaliacaoFisicaService {
     return `AV${numero.toString().padStart(5, '0')}`;
   }
 
-  /**
-   * ⚖️ Calcula IMC (peso / altura²)
-   */
+  // ⚖️ Calcula IMC
   calcularIMC(peso, altura) {
     const alturaM = altura > 10 ? altura / 100 : altura;
     return +(peso / (alturaM * alturaM)).toFixed(2);
   }
 
-  /**
-   * 📊 Classificação IMC segundo OMS
-   */
+  // 📊 Classificação IMC
   classificarIMC(imc) {
     if (imc < 18.5) return 'ABAIXO_DO_PESO';
     if (imc < 25) return 'NORMAL';
@@ -35,26 +29,20 @@ class AvaliacaoFisicaService {
     return 'OBESIDADE_III';
   }
 
-  /**
-   * 💪 Calcula composição corporal
-   */
+  // 💪 Composição corporal
   calcularComposicaoCorporal(peso, percentualGordura) {
     const massaGorda = +(peso * (percentualGordura / 100)).toFixed(2);
     const massaMagra = +(peso - massaGorda).toFixed(2);
     return { massaMagra, massaGorda };
   }
 
-  /**
-   * 🧠 Calcula peso ideal (IMC = 22)
-   */
+  // 🧠 Peso ideal (IMC = 22)
   calcularPesoIdeal(altura) {
     const alturaM = altura > 10 ? altura / 100 : altura;
     return +(22 * (alturaM * alturaM)).toFixed(2);
   }
 
-  /**
-   * 🆕 Criar nova avaliação física
-   */
+  // 🆕 Criar nova avaliação física
   async criar(dados, alunoId, empresaId) {
     if (!empresaId) throw new ApiError(400, 'empresaId é obrigatório');
     if (!alunoId) throw new ApiError(400, 'alunoId é obrigatório');
@@ -71,14 +59,13 @@ class AvaliacaoFisicaService {
     const classificacaoIMC = this.classificarIMC(imc);
     const pesoIdeal = this.calcularPesoIdeal(altura);
 
-    // Composição corporal (se houver percentual de gordura)
+    // Composição corporal (se houver)
     let massaMagra = null, massaGorda = null;
     if (dados.percentualGordura) {
-      const comp = this.calcularComposicaoCorporal(peso, dados.percentualGordura);
-      massaMagra = comp.massaMagra;
-      massaGorda = comp.massaGorda;
+      ({ massaMagra, massaGorda } = this.calcularComposicaoCorporal(peso, dados.percentualGordura));
     }
 
+    const dataBase = new Date(dataAvaliacao);
     const novaAvaliacao = {
       ...dados,
       codigo,
@@ -91,27 +78,23 @@ class AvaliacaoFisicaService {
       pesoIdeal,
       massaMagra,
       massaGorda,
-      dataAvaliacao: new Date(dataAvaliacao),
+      dataAvaliacao: dataBase,
       proximaAvaliacao: dados.proximaAvaliacao
         ? new Date(dados.proximaAvaliacao)
-        : new Date(new Date(dataAvaliacao).setDate(new Date(dataAvaliacao).getDate() + 90)),
+        : new Date(dataBase.setDate(dataBase.getDate() + 90)),
       status: 'ATIVA'
     };
 
     return avaliacaoFisicaRepository.criar(novaAvaliacao);
   }
 
-  /**
-   * 📋 Listar avaliações
-   */
+  // 📋 Listar avaliações
   async listarTodos(filtros) {
     if (!filtros.empresaId) throw new ApiError(400, 'empresaId é obrigatório');
     return avaliacaoFisicaRepository.buscarTodos(filtros);
   }
 
-  /**
-   * 🔍 Buscar avaliação por ID
-   */
+  // 🔍 Buscar por ID
   async buscarPorId(id, empresaId) {
     if (!empresaId) throw new ApiError(400, 'empresaId é obrigatório');
     const avaliacao = await avaliacaoFisicaRepository.buscarPorId(id, empresaId);
@@ -119,17 +102,13 @@ class AvaliacaoFisicaService {
     return avaliacao;
   }
 
-  /**
-   * 🧾 Buscar histórico por aluno
-   */
+  // 🧾 Histórico por aluno
   async buscarPorAluno(alunoId, empresaId) {
     if (!empresaId) throw new ApiError(400, 'empresaId é obrigatório');
     return avaliacaoFisicaRepository.buscarPorAluno(alunoId, empresaId);
   }
 
-  /**
-   * ✏️ Atualizar avaliação
-   */
+  // ✏️ Atualizar avaliação física
   async atualizar(id, dados, empresaId) {
     if (!empresaId) throw new ApiError(400, 'empresaId é obrigatório');
 
@@ -138,25 +117,34 @@ class AvaliacaoFisicaService {
 
     const atualizacao = { ...dados };
 
-    // Recalcular IMC e peso ideal se altura ou peso mudarem
+    // Recalcular IMC/pesoIdeal se peso ou altura mudarem
     const peso = dados.peso ?? existente.peso;
     const altura = dados.altura ?? existente.altura;
-
     if (dados.peso || dados.altura) {
       atualizacao.imc = this.calcularIMC(peso, altura);
       atualizacao.classificacaoIMC = this.classificarIMC(atualizacao.imc);
       atualizacao.pesoIdeal = this.calcularPesoIdeal(altura);
     }
 
+    // 🧠 Tratamento das datas
+    let dataAvaliacao = dados.dataAvaliacao
+      ? new Date(dados.dataAvaliacao)
+      : new Date(existente.dataAvaliacao);
+
+    let proximaAvaliacao = dados.proximaAvaliacao
+      ? new Date(dados.proximaAvaliacao)
+      : new Date(new Date(dataAvaliacao).setDate(dataAvaliacao.getDate() + 90));
+
+    atualizacao.dataAvaliacao = dataAvaliacao;
+    atualizacao.proximaAvaliacao = proximaAvaliacao;
+    atualizacao.status = dados.status ?? 'ATIVA';
+
     return avaliacaoFisicaRepository.atualizar(id, atualizacao, empresaId);
   }
 
-  /**
-   * 🗑️ Deletar avaliação
-   */
+  // 🗑️ Deletar avaliação
   async deletar(id, empresaId) {
     if (!empresaId) throw new ApiError(400, 'empresaId é obrigatório');
-
     const avaliacao = await avaliacaoFisicaRepository.buscarPorId(id, empresaId);
     if (!avaliacao) throw new ApiError(404, 'Avaliação física não encontrada');
 
@@ -164,9 +152,7 @@ class AvaliacaoFisicaService {
     return { message: 'Avaliação física deletada com sucesso' };
   }
 
-  /**
-   * 📈 Buscar evolução do aluno
-   */
+  // 📈 Evolução do aluno
   async buscarEvolucao(alunoId, empresaId, parametros = ['peso', 'imc', 'percentualGordura']) {
     if (!empresaId) throw new ApiError(400, 'empresaId é obrigatório');
 
@@ -177,17 +163,15 @@ class AvaliacaoFisicaService {
     return {
       aluno: {
         id: aluno.id,
-        nome: aluno.pessoa.nome1 + (aluno.pessoa.nome2 ? ' ' + aluno.pessoa.nome2 : ''),
-        matricula: aluno.matricula
+        nome: `${aluno.pessoa.nome1}${aluno.pessoa.nome2 ? ' ' + aluno.pessoa.nome2 : ''}`,
+        matricula: aluno.matricula,
       },
       totalAvaliacoes: evolucao.length,
-      evolucao
+      evolucao,
     };
   }
 
-  /**
-   * ⚖️ Comparar duas avaliações
-   */
+  // ⚖️ Comparar avaliações
   async compararAvaliacoes(avaliacaoAnteriorId, avaliacaoAtualId, empresaId) {
     if (!empresaId) throw new ApiError(400, 'empresaId é obrigatório');
 

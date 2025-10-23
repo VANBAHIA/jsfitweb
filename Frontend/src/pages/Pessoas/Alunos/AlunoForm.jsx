@@ -78,93 +78,109 @@ function AlunoForm({ aluno, onSalvar, onCancelar }) {
     }
   });
 
-
-
   useEffect(() => {
-  if (!aluno) return; // 👈 garante que só roda quando o aluno existe
+    if (!aluno) return; // 👈 garante que só roda quando o aluno existe
+    console.log("Inicio effext", aluno);
+    const formatarAltura = (altura) => {
+      if (!altura) return '';
+      const alturaNum = parseFloat(altura);
+      return alturaNum > 3 ? (alturaNum / 100).toFixed(2) : alturaNum.toFixed(2);
+    };
 
-  const formatarAltura = (altura) => {
-    if (!altura) return '';
-    const alturaNum = parseFloat(altura);
-    return alturaNum > 3 ? (alturaNum / 100).toFixed(2) : alturaNum.toFixed(2);
-  };
+    const formatarData = (data) => {
+      if (!data) return '';
+      const d = new Date(data);
+      return d.toISOString().split('T')[0];
+    };
 
-  const formatarData = (data) => {
-    if (!data) return '';
-    // Aceita Date, ISO ou string simples
-    const d = typeof data === 'string' ? data : new Date(data);
-    return d.toISOString().split('T')[0];
-  };
+    setFormData({
+      pessoaId: aluno.pessoaId || aluno.pessoa?.id || '',
+      pessoa: {
+        codigo: aluno.pessoa?.codigo || '',
+        nome1: aluno.pessoa?.nome1 || '',
+        nome2: aluno.pessoa?.nome2 || '',
+        doc1: aluno.pessoa?.doc1 || '',
+        doc2: aluno.pessoa?.doc2 || '',
+        dtNsc: formatarData(aluno.pessoa?.dtNsc),
+        situacao: aluno.pessoa?.situacao || 'ATIVO',
+      },
+      enderecos: aluno.pessoa?.enderecos?.map(end => ({
+        id: end.id || undefined,
+        logradouro: end.logradouro || '',
+        cep: end.cep || '',
+        cidade: end.cidade || '',
+        uf: end.uf || '',
+      })) || [],
+      contatos: aluno.pessoa?.contatos?.map(cont => ({
+        id: cont.id || undefined,
+        tipo: cont.tipo || 'CELULAR',
+        valor: cont.valor || '',
+      })) || [],
+      vldExameMedico: formatarData(aluno.vldExameMedico),
+      vldAvaliacao: formatarData(aluno.vldAvaliacao),
+      objetivo: aluno.objetivo || '',
+      profissao: aluno.profissao || '',
+      empresa: aluno.empresa || '',
+      responsavel: aluno.responsavel || null,
+      horarios: aluno.horarios?.map(h => ({
+        id: h.id || undefined,
+        local: h.local || '',
+        diasSemana: h.diasSemana || [],
+        horarioEntrada: h.horarioEntrada || '',
+        horarioSaida: h.horarioSaida || '',
+      })) || [],
+      controleAcesso: {
+        senha: '',
+        senhaAtual: aluno.controleAcesso?.senha || '',
+        impressaoDigital1: aluno.controleAcesso?.impressaoDigital1 || '',
+        impressaoDigital2: aluno.controleAcesso?.impressaoDigital2 || '',
+      },
 
-  setFormData({
-    pessoaId: aluno.pessoaId || aluno.pessoa?.id || '',
-    pessoa: {
-      codigo: aluno.pessoa?.codigo || '',
-      nome1: aluno.pessoa?.nome1 || '',
-      nome2: aluno.pessoa?.nome2 || '',
-      doc1: aluno.pessoa?.doc1 || '',
-      doc2: aluno.pessoa?.doc2 || '',
-      dtNsc: formatarData(aluno.pessoa?.dtNsc),
-      situacao: aluno.pessoa?.situacao || 'ATIVO',
-    },
-    enderecos: aluno.pessoa?.enderecos?.map(end => ({
-      id: end.id || undefined,
-      logradouro: end.logradouro || '',
-      cep: end.cep || '',
-      cidade: end.cidade || '',
-      uf: end.uf || '',
-    })) || [],
-    contatos: aluno.pessoa?.contatos?.map(cont => ({
-      id: cont.id || undefined,
-      tipo: cont.tipo || 'CELULAR',
-      valor: cont.valor || '',
-    })) || [],
-    vldExameMedico: formatarData(aluno.vldExameMedico),
-    vldAvaliacao: formatarData(aluno.vldAvaliacao),
-    objetivo: aluno.objetivo || '',
-    profissao: aluno.profissao || '',
-    empresa: aluno.empresa || '',
-    responsavel: aluno.responsavel || null,
-    horarios: aluno.horarios?.map(h => ({
-      id: h.id || undefined,
-      local: h.local || '',
-      diasSemana: h.diasSemana || [],
-      horarioEntrada: h.horarioEntrada || '',
-      horarioSaida: h.horarioSaida || '',
-    })) || [],
-    controleAcesso: {
-      senha: '',
-      senhaAtual: aluno.controleAcesso?.senha || '',
-      impressaoDigital1: aluno.controleAcesso?.impressaoDigital1 || '',
-      impressaoDigital2: aluno.controleAcesso?.impressaoDigital2 || '',
-    },
+      // 🔹 Avaliações físicas (com proteção completa e cálculos corretos)
+      avaliacoesFisicas: Array.isArray(aluno.avaliacoesFisicas)
+        ? aluno.avaliacoesFisicas.map((av) => {
+          const altura = formatarAltura(av?.altura);
+          const peso = parseFloat(av?.peso) || 0;
+          const alturaNum = parseFloat(altura) || 0;
+          const percentualGordura = parseFloat(av?.percentualGordura) || 0;
 
-    // 🔹 Avaliações físicas (com proteção completa)
-    avaliacoesFisicas: Array.isArray(aluno.avaliacoesFisicas)
-      ? aluno.avaliacoesFisicas.map((av) => ({
-          id: av?.id || undefined,
-          peso: av?.peso?.toString() || '',
-          altura: formatarAltura(av?.altura) || '',
-          imc: av?.imc?.toString() || '',
-          percentualGordura: av?.percentualGordura?.toString() || '',
-          massaMagra: av?.massaMagra?.toString() || '',
-          massaGorda: av?.massaGorda?.toString() || '',
-          circunferenciaTorax: av?.torax?.toString() || '',
-          circunferenciaCintura: av?.cintura?.toString() || '',
-          circunferenciaQuadril: av?.quadril?.toString() || '',
-          circunferenciaBracoDireito: av?.bracoDireito?.toString() || '',
-          circunferenciaBracoEsquerdo: av?.bracoEsquerdo?.toString() || '',
-          circunferenciaCoxaDireita: av?.coxaDireita?.toString() || '',
-          circunferenciaCoxaEsquerda: av?.coxaEsquerda?.toString() || '',
-          circunferenciaPanturrilhaDireita: av?.panturrilhaDireita?.toString() || '',
-          circunferenciaPanturrilhaEsquerda: av?.panturrilhaEsquerda?.toString() || '',
-          observacoes: av?.observacoes || '',
-          dataAvaliacao: formatarData(av?.dataAvaliacao) ||
-            new Date().toISOString().split('T')[0], // 👈 fallback seguro
-        }))
-      : [],
-  });
-}, [aluno]);
+          // Recalcula IMC correto
+          const imcCorreto = (peso > 0 && alturaNum > 0)
+            ? (peso / (alturaNum * alturaNum)).toFixed(2)
+            : '';
+
+          // Recalcula massa gorda e magra
+          const massaGorda = (peso > 0 && percentualGordura > 0)
+            ? ((peso * percentualGordura) / 100).toFixed(2)
+            : '';
+          const massaMagra = (peso > 0 && massaGorda)
+            ? (peso - parseFloat(massaGorda)).toFixed(2)
+            : '';
+
+          return {
+            id: av?.id || undefined,
+            peso: av?.peso?.toString() || '',
+            altura: altura,
+            imc: imcCorreto,
+            percentualGordura: av?.percentualGordura?.toString() || '',
+            massaMagra: massaMagra || av?.massaMagra?.toString() || '',
+            massaGorda: massaGorda || av?.massaGorda?.toString() || '',
+            circunferenciaTorax: av?.torax?.toString() || '',
+            circunferenciaCintura: av?.cintura?.toString() || '',
+            circunferenciaQuadril: av?.quadril?.toString() || '',
+            circunferenciaBracoDireito: av?.bracoDireito?.toString() || '',
+            circunferenciaBracoEsquerdo: av?.bracoEsquerdo?.toString() || '',
+            circunferenciaCoxaDireita: av?.coxaDireita?.toString() || '',
+            circunferenciaCoxaEsquerda: av?.coxaEsquerda?.toString() || '',
+            circunferenciaPanturrilhaDireita: av?.panturrilhaDireita?.toString() || '',
+            circunferenciaPanturrilhaEsquerda: av?.panturrilhaEsquerda?.toString() || '',
+            observacoes: av?.observacoes || '',
+            dataAvaliacao: formatarData(av?.dataAvaliacao) || new Date().toISOString().split('T')[0],
+          };
+        })
+        : [],
+    });
+  }, [aluno]);
 
 
   const handleChange = (campo, valor) => {
@@ -641,6 +657,9 @@ function AlunoForm({ aluno, onSalvar, onCancelar }) {
                   </div>
                 </div>
               )}
+
+
+
               {abaSelecionada === 'avaliacaoFisica' && (
                 <div>
                   {/* Cabeçalho */}
@@ -654,318 +673,198 @@ function AlunoForm({ aluno, onSalvar, onCancelar }) {
 
                   {/* Contador e botão */}
                   <div className="flex justify-between items-center mb-4">
-                    <h5 className="font-semibold text-gray-800 flex items-center gap-2">
-                      <span className="bg-blue-100 text-blue-700 px-3 py-1.5 rounded-full text-sm">
-                        {formData.avaliacoesFisicas.length} {formData.avaliacoesFisicas.length === 1 ? 'avaliação' : 'avaliações'}
-                      </span>
-                    </h5>
-                    <button type="button" onClick={adicionarAvaliacaoFisica}
-                      className="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm flex items-center gap-2 shadow-md transition-colors">
-                      <Plus size={18} />Nova Avaliação
+                    <h5 className="text-lg font-bold text-gray-900">📊 Avaliações Físicas</h5>
+                    <button
+                      type="button"
+                      onClick={adicionarAvaliacaoFisica}
+                      className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+                    >
+                      <Plus size={20} />
+                      <span>Nova Avaliação</span>
                     </button>
                   </div>
 
-                  {/* Lista de avaliações */}
+                  {/* Lista de avaliações - COM PROTEÇÃO */}
                   <div className="space-y-6">
-                    {formData.avaliacoesFisicas.map((avaliacao, index) => (
-                      <div key={index} className="border-2 border-gray-200 rounded-lg bg-white shadow-sm">
-                        {/* Cabeçalho */}
-                        <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-gray-200 flex justify-between items-center">
-                          <div>
-                            <h6 className="font-bold text-gray-900 text-lg mb-1">📋 Avaliação #{formData.avaliacoesFisicas.length - index}</h6>
-                            <input type="date" required value={avaliacao.dataAvaliacao}
-                              onChange={e => handleAvaliacaoFisicaChange(index, 'dataAvaliacao', e.target.value)}
-                              className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-medium" />
-                          </div>
-                          <button type="button" onClick={() => removerAvaliacaoFisica(index)}
-                            className="text-red-600 hover:bg-red-100 p-2 rounded-lg transition-colors" title="Remover avaliação">
-                            <Trash2 size={20} />
-                          </button>
-                        </div>
-
-                        {/* Conteúdo */}
-                        <div className="p-5 space-y-6">
-                          {/* Medidas básicas */}
-                          <div className="border border-gray-200 rounded-lg p-4">
-                            <h6 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                              <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">1</span>Medidas Básicas
-                            </h6>
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                              {[
-                                { label: "Peso (kg) *", key: "peso", step: "0.1", ph: "Ex: 75.5" },
-                                { label: "Altura (m) *", key: "altura", step: "0.01", ph: "Ex: 1.75", extra: "💡 Digite em metros (ex: 1.75)" },
-                                { label: "% Gordura", key: "percentualGordura", step: "0.1", ph: "Ex: 15.5" },
-                              ].map(({ label, key, step, ph, extra }) => (
-                                <div key={key}>
-                                  <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-                                  <input type="number" step={step} required={label.includes('*')}
-                                    value={avaliacao[key]} onChange={e => handleAvaliacaoFisicaChange(index, key, e.target.value)}
-                                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder={ph} />
-                                  {extra && <p className="text-xs text-gray-500 mt-1">{extra}</p>}
-                                </div>
-                              ))}
+                    {(formData.avaliacoesFisicas || [])
+                      .filter(av => av && typeof av === 'object')
+                      .map((avaliacao, index) => (
+                        <div key={index} className="border-2 border-gray-200 rounded-lg bg-white shadow-sm">
+                          {/* Cabeçalho */}
+                          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 p-4 border-b border-gray-200 flex justify-between items-center">
+                            <div>
+                              <h6 className="font-bold text-gray-900 text-lg mb-1">📋 Avaliação #{formData.avaliacoesFisicas.length - index}</h6>
+                              <input
+                                type="date"
+                                required
+                                value={avaliacao?.dataAvaliacao || ''}
+                                onChange={e => handleAvaliacaoFisicaChange(index, 'dataAvaliacao', e.target.value)}
+                                className="px-3 py-1.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 text-sm font-medium"
+                              />
                             </div>
-
-                            {/* Resultados */}
-                            {avaliacao.peso && avaliacao.altura && (
-                              <div className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-                                <h6 className="font-semibold text-green-900 mb-3">📈 Resultados Calculados</h6>
-                                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                                  <div className="bg-white rounded-lg p-3 shadow-sm">
-                                    <p className="text-xs text-gray-600 mb-1">IMC</p>
-                                    <p className="text-2xl font-bold text-gray-900">{avaliacao.imc || '-'}</p>
-                                    {avaliacao.imc && (() => {
-                                      const c = getClassificacaoIMC(parseFloat(avaliacao.imc)); return (
-                                        <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${c.cor === 'green' ? 'bg-green-100 text-green-800' : c.cor === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
-                                            c.cor === 'orange' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'}`}>{c.texto}</span>)
-                                    })()}
-                                  </div>
-                                  {avaliacao.massaMagra && <div className="bg-white rounded-lg p-3 shadow-sm"><p className="text-xs text-gray-600 mb-1">Massa Magra</p><p className="text-2xl font-bold text-blue-600">{avaliacao.massaMagra} kg</p></div>}
-                                  {avaliacao.massaGorda && <div className="bg-white rounded-lg p-3 shadow-sm"><p className="text-xs text-gray-600 mb-1">Massa Gorda</p><p className="text-2xl font-bold text-orange-600">{avaliacao.massaGorda} kg</p></div>}
-                                </div>
-                              </div>
-                            )}
+                            <button
+                              type="button"
+                              onClick={() => removerAvaliacaoFisica(index)}
+                              className="text-red-600 hover:bg-red-100 p-2 rounded-lg transition-colors"
+                              title="Remover avaliação"
+                            >
+                              <Trash2 size={20} />
+                            </button>
                           </div>
 
-                          {/* Circunferências */}
-                          {[
-                            {
-                              titulo: 'Circunferências - Tronco', cor: 'purple', num: 2, campos: [
-                                ['circunferenciaTorax', 'Tórax (cm)'], ['circunferenciaCintura', 'Cintura (cm)'], ['circunferenciaQuadril', 'Quadril (cm)']]
-                            },
-                            {
-                              titulo: 'Circunferências - Membros Superiores', cor: 'orange', num: 3, campos: [
-                                ['circunferenciaBracoDireito', '💪 Braço Direito (cm)'], ['circunferenciaBracoEsquerdo', '💪 Braço Esquerdo (cm)']]
-                            },
-                            {
-                              titulo: 'Circunferências - Membros Inferiores', cor: 'green', num: 4, campos: [
-                                ['circunferenciaCoxaDireita', '🦵 Coxa Direita (cm)'], ['circunferenciaCoxaEsquerda', '🦵 Coxa Esquerda (cm)'],
-                                ['circunferenciaPanturrilhaDireita', '🦿 Panturrilha Direita (cm)'], ['circunferenciaPanturrilhaEsquerda', '🦿 Panturrilha Esquerda (cm)']]
-                            }
-                          ].map(({ titulo, cor, num, campos }) => (
-                            <div key={num} className="border border-gray-200 rounded-lg p-4">
+                          {/* Conteúdo */}
+                          <div className="p-5 space-y-6">
+                            {/* Medidas básicas */}
+                            <div className="border border-gray-200 rounded-lg p-4">
                               <h6 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
-                                <span className={`bg-${cor}-100 text-${cor}-700 px-3 py-1 rounded-full text-sm`}>{num}</span>{titulo}
+                                <span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">1</span>Medidas Básicas
                               </h6>
-                              <div className={`grid grid-cols-1 md:grid-cols-${campos.length > 2 ? 2 : 3} gap-4`}>
-                                {campos.map(([key, label]) => (
+                              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                {[
+                                  { label: "Peso (kg) *", key: "peso", step: "0.1", ph: "Ex: 75.5" },
+                                  { label: "Altura (m) *", key: "altura", step: "0.01", ph: "Ex: 1.75", extra: "💡 Digite em metros (ex: 1.75)" },
+                                  { label: "% Gordura", key: "percentualGordura", step: "0.1", ph: "Ex: 15.5" },
+                                ].map(({ label, key, step, ph, extra }) => (
                                   <div key={key}>
                                     <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
-                                    <input type="number" step="0.1" value={avaliacao[key]}
+                                    <input
+                                      type="number"
+                                      step={step}
+                                      required={label.includes('*')}
+                                      value={avaliacao?.[key] || ''}
                                       onChange={e => handleAvaliacaoFisicaChange(index, key, e.target.value)}
-                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: 36.5" />
+                                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                      placeholder={ph}
+                                    />
+                                    {extra && <p className="text-xs text-gray-500 mt-1">{extra}</p>}
                                   </div>
                                 ))}
                               </div>
-                            </div>
-                          ))}
 
-                          {/* Observações */}
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-2">📝 Observações</label>
-                            <textarea value={avaliacao.observacoes}
-                              onChange={e => handleAvaliacaoFisicaChange(index, 'observacoes', e.target.value)}
-                              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                              rows="3" placeholder="Ex: Aluno apresenta boa mobilidade..." />
+                              {/* Resultados */}
+                              {avaliacao?.peso && avaliacao?.altura && (
+                                <div className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
+                                  <h6 className="font-semibold text-green-900 mb-3">📈 Resultados Calculados</h6>
+                                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                                    <div className="bg-white rounded-lg p-3 shadow-sm">
+                                      <p className="text-xs text-gray-600 mb-1">IMC</p>
+                                      <p className="text-2xl font-bold text-gray-900">{avaliacao.imc || '-'}</p>
+                                      {avaliacao.imc && (() => {
+                                        const c = getClassificacaoIMC(parseFloat(avaliacao.imc));
+                                        return (
+                                          <span className={`inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${c.cor === 'green' ? 'bg-green-100 text-green-800' :
+                                              c.cor === 'yellow' ? 'bg-yellow-100 text-yellow-800' :
+                                                c.cor === 'orange' ? 'bg-orange-100 text-orange-800' :
+                                                  'bg-red-100 text-red-800'
+                                            }`}>{c.texto}</span>
+                                        )
+                                      })()}
+                                    </div>
+                                    {avaliacao.massaMagra && (
+                                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                                        <p className="text-xs text-gray-600 mb-1">Massa Magra</p>
+                                        <p className="text-2xl font-bold text-blue-600">{avaliacao.massaMagra} kg</p>
+                                      </div>
+                                    )}
+                                    {avaliacao.massaGorda && (
+                                      <div className="bg-white rounded-lg p-3 shadow-sm">
+                                        <p className="text-xs text-gray-600 mb-1">Massa Gorda</p>
+                                        <p className="text-2xl font-bold text-orange-600">{avaliacao.massaGorda} kg</p>
+                                      </div>
+                                    )}
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Circunferências */}
+                            {[
+                              {
+                                titulo: 'Circunferências - Tronco', cor: 'purple', num: 2,
+                                campos: [
+                                  ['circunferenciaTorax', 'Tórax (cm)'],
+                                  ['circunferenciaCintura', 'Cintura (cm)'],
+                                  ['circunferenciaQuadril', 'Quadril (cm)']
+                                ]
+                              },
+                              {
+                                titulo: 'Circunferências - Membros Superiores', cor: 'orange', num: 3,
+                                campos: [
+                                  ['circunferenciaBracoDireito', '💪 Braço Direito (cm)'],
+                                  ['circunferenciaBracoEsquerdo', '💪 Braço Esquerdo (cm)']
+                                ]
+                              },
+                              {
+                                titulo: 'Circunferências - Membros Inferiores', cor: 'green', num: 4,
+                                campos: [
+                                  ['circunferenciaCoxaDireita', '🦵 Coxa Direita (cm)'],
+                                  ['circunferenciaCoxaEsquerda', '🦵 Coxa Esquerda (cm)'],
+                                  ['circunferenciaPanturrilhaDireita', '🦿 Panturrilha Direita (cm)'],
+                                  ['circunferenciaPanturrilhaEsquerda', '🦿 Panturrilha Esquerda (cm)']
+                                ]
+                              }
+                            ].map(({ titulo, cor, num, campos }) => (
+                              <div key={num} className="border border-gray-200 rounded-lg p-4">
+                                <h6 className="font-semibold text-gray-800 mb-4 flex items-center gap-2">
+                                  <span className={`bg-${cor}-100 text-${cor}-700 px-3 py-1 rounded-full text-sm`}>{num}</span>{titulo}
+                                </h6>
+                                <div className={`grid grid-cols-1 md:grid-cols-${campos.length > 2 ? 2 : 3} gap-4`}>
+                                  {campos.map(([key, label]) => (
+                                    <div key={key}>
+                                      <label className="block text-sm font-medium text-gray-700 mb-2">{label}</label>
+                                      <input
+                                        type="number"
+                                        step="0.1"
+                                        value={avaliacao?.[key] || ''}
+                                        onChange={e => handleAvaliacaoFisicaChange(index, key, e.target.value)}
+                                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                        placeholder="Ex: 36.5"
+                                      />
+                                    </div>
+                                  ))}
+                                </div>
+                              </div>
+                            ))}
+
+                            {/* Observações */}
+                            <div>
+                              <label className="block text-sm font-medium text-gray-700 mb-2">📝 Observações</label>
+                              <textarea
+                                value={avaliacao?.observacoes || ''}
+                                onChange={e => handleAvaliacaoFisicaChange(index, 'observacoes', e.target.value)}
+                                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                rows="3"
+                                placeholder="Ex: Aluno apresenta boa mobilidade..."
+                              />
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ))}
+                      ))
+                    }
 
-                    {/* Nenhuma avaliação */}
-                    {formData.avaliacoesFisicas.length === 0 && (
-                      <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg bg-gray-50">
-                        <div className="text-6xl mb-4">📊</div>
-                        <p className="font-medium text-lg mb-2">Nenhuma avaliação física cadastrada</p>
-                        <p className="text-sm text-gray-600 mb-4">Clique em "Nova Avaliação" para começar</p>
+                    {/* Mensagem quando não há avaliações */}
+                    {(!formData.avaliacoesFisicas || formData.avaliacoesFisicas.length === 0) && (
+                      <div className="text-center py-12 text-gray-500 border-2 border-dashed border-gray-300 rounded-lg">
+                        <span className="text-6xl mb-4 block">📊</span>
+                        <p className="font-medium text-lg">Nenhuma avaliação física cadastrada</p>
+                        <p className="text-sm mt-2">Clique em "Nova Avaliação" para começar</p>
                       </div>
                     )}
                   </div>
 
                   {/* Dica final */}
-                  {formData.avaliacoesFisicas.length > 0 && (
+                  {formData.avaliacoesFisicas && formData.avaliacoesFisicas.length > 0 && (
                     <div className="bg-amber-50 border border-amber-200 rounded-lg p-4 mt-6 flex gap-3">
                       <span className="text-2xl">💡</span>
                       <div>
                         <h6 className="font-semibold text-amber-900 mb-1">Dica Profissional</h6>
-                        <p className="text-sm text-amber-800">Registre avaliações periódicas (30-60 dias) para acompanhar a evolução do aluno. As mais recentes aparecem no topo.</p>
+                        <p className="text-sm text-amber-800">
+                          Registre avaliações periódicas (30-60 dias) para acompanhar a evolução do aluno.
+                          As mais recentes aparecem no topo.
+                        </p>
                       </div>
                     </div>
                   )}
-                </div>
-              )}
-
-
-              {abaSelecionada === 'avaliacaoFisica' && (
-                <div className="space-y-6">
-                  <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-                    <div className="flex items-start gap-3">
-                      <div className="bg-blue-600 text-white p-2 rounded-lg">📊</div>
-                      <div>
-                        <h5 className="font-semibold text-gray-900 mb-1">Avaliação Física Inicial</h5>
-                        <p className="text-sm text-gray-600">Preencha os dados antropométricos do aluno. Os cálculos de IMC, massa magra e massa gorda serão feitos automaticamente.</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">Data da Avaliação *</label>
-                    <input type="date" required value={formData.avaliacaoFisica.dataAvaliacao}
-                      onChange={(e) => handleAvaliacaoFisicaChange('dataAvaliacao', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" />
-                  </div>
-
-                  <div className="bg-white border-2 border-gray-200 rounded-lg p-5">
-                    <h6 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><span className="bg-blue-100 text-blue-700 px-3 py-1 rounded-full text-sm">1</span>Medidas Básicas</h6>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Peso (kg) *</label>
-                        <input type="number" step="0.1" required value={formData.avaliacaoFisica.peso}
-                          onChange={(e) => handleAvaliacaoFisicaChange('peso', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          placeholder="Ex: 75.5" />
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Altura (m) *</label>
-                        <input type="number" step="0.01" required value={formData.avaliacaoFisica.altura}
-                          onChange={(e) => handleAvaliacaoFisicaChange('altura', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          placeholder="Ex: 1.75" min="0.5" max="2.5" />
-                        <p className="text-xs text-gray-500 mt-1">💡 Digite em metros (ex: 1.75 para 1,75m)</p>
-                      </div>
-
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">% Gordura</label>
-                        <input type="number" step="0.1" value={formData.avaliacaoFisica.percentualGordura}
-                          onChange={(e) => handleAvaliacaoFisicaChange('percentualGordura', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          placeholder="Ex: 15.5" />
-                      </div>
-                    </div>
-
-                    {formData.avaliacaoFisica.peso && formData.avaliacaoFisica.altura && (
-                      <div className="mt-4 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-lg p-4">
-                        <h6 className="font-semibold text-green-900 mb-3">📈 Resultados Calculados</h6>
-                        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                          <div className="bg-white rounded-lg p-3 shadow-sm">
-                            <p className="text-xs text-gray-600 mb-1">IMC</p>
-                            <p className="text-2xl font-bold text-gray-900">{formData.avaliacaoFisica.imc || '-'}</p>
-                            {formData.avaliacaoFisica.imc && (
-                              <span className="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                {getClassificacaoIMC(parseFloat(formData.avaliacaoFisica.imc)).texto}
-                              </span>
-                            )}
-                          </div>
-
-                          {formData.avaliacaoFisica.massaMagra && (
-                            <div className="bg-white rounded-lg p-3 shadow-sm">
-                              <p className="text-xs text-gray-600 mb-1">Massa Magra</p>
-                              <p className="text-2xl font-bold text-blue-600">{formData.avaliacaoFisica.massaMagra} kg</p>
-                            </div>
-                          )}
-
-                          {formData.avaliacaoFisica.massaGorda && (
-                            <div className="bg-white rounded-lg p-3 shadow-sm">
-                              <p className="text-xs text-gray-600 mb-1">Massa Gorda</p>
-                              <p className="text-2xl font-bold text-orange-600">{formData.avaliacaoFisica.massaGorda} kg</p>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="bg-white border-2 border-gray-200 rounded-lg p-5">
-                    <h6 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><span className="bg-purple-100 text-purple-700 px-3 py-1 rounded-full text-sm">2</span>Circunferências - Tronco</h6>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Tórax (cm)</label>
-                        <input type="number" step="0.1" value={formData.avaliacaoFisica.circunferenciaTorax}
-                          onChange={(e) => handleAvaliacaoFisicaChange('circunferenciaTorax', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: 95.5" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Cintura (cm)</label>
-                        <input type="number" step="0.1" value={formData.avaliacaoFisica.circunferenciaCintura}
-                          onChange={(e) => handleAvaliacaoFisicaChange('circunferenciaCintura', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: 82.0" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">Quadril (cm)</label>
-                        <input type="number" step="0.1" value={formData.avaliacaoFisica.circunferenciaQuadril}
-                          onChange={(e) => handleAvaliacaoFisicaChange('circunferenciaQuadril', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: 98.5" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white border-2 border-gray-200 rounded-lg p-5">
-                    <h6 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><span className="bg-orange-100 text-orange-700 px-3 py-1 rounded-full text-sm">3</span>Circunferências - Membros Superiores</h6>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">💪 Braço Direito (cm)</label>
-                        <input type="number" step="0.1" value={formData.avaliacaoFisica.circunferenciaBracoDireito}
-                          onChange={(e) => handleAvaliacaoFisicaChange('circunferenciaBracoDireito', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: 32.5" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">💪 Braço Esquerdo (cm)</label>
-                        <input type="number" step="0.1" value={formData.avaliacaoFisica.circunferenciaBracoEsquerdo}
-                          onChange={(e) => handleAvaliacaoFisicaChange('circunferenciaBracoEsquerdo', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: 32.0" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="bg-white border-2 border-gray-200 rounded-lg p-5">
-                    <h6 className="font-semibold text-gray-800 mb-4 flex items-center gap-2"><span className="bg-green-100 text-green-700 px-3 py-1 rounded-full text-sm">4</span>Circunferências - Membros Inferiores</h6>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">🦵 Coxa Direita (cm)</label>
-                        <input type="number" step="0.1" value={formData.avaliacaoFisica.circunferenciaCoxaDireita}
-                          onChange={(e) => handleAvaliacaoFisicaChange('circunferenciaCoxaDireita', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: 58.5" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">🦵 Coxa Esquerda (cm)</label>
-                        <input type="number" step="0.1" value={formData.avaliacaoFisica.circunferenciaCoxaEsquerda}
-                          onChange={(e) => handleAvaliacaoFisicaChange('circunferenciaCoxaEsquerda', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: 58.0" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">🦿 Panturrilha Direita (cm)</label>
-                        <input type="number" step="0.1" value={formData.avaliacaoFisica.circunferenciaPanturrilhaDireita}
-                          onChange={(e) => handleAvaliacaoFisicaChange('circunferenciaPanturrilhaDireita', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: 36.5" />
-                      </div>
-                      <div>
-                        <label className="block text-sm font-medium text-gray-700 mb-2">🦿 Panturrilha Esquerda (cm)</label>
-                        <input type="number" step="0.1" value={formData.avaliacaoFisica.circunferenciaPanturrilhaEsquerda}
-                          onChange={(e) => handleAvaliacaoFisicaChange('circunferenciaPanturrilhaEsquerda', e.target.value)}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" placeholder="Ex: 36.0" />
-                      </div>
-                    </div>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">📝 Observações</label>
-                    <textarea value={formData.avaliacaoFisica.observacoes}
-                      onChange={(e) => handleAvaliacaoFisicaChange('observacoes', e.target.value)}
-                      className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500" rows="4"
-                      placeholder="Ex: Aluno apresenta boa mobilidade, sem restrições de movimento. Objetivo principal é hipertrofia..." />
-                  </div>
-
-                  <div className="bg-amber-50 border border-amber-200 rounded-lg p-4">
-                    <div className="flex gap-3">
-                      <span className="text-2xl">💡</span>
-                      <div>
-                        <h6 className="font-semibold text-amber-900 mb-1">Dica Profissional</h6>
-                        <p className="text-sm text-amber-800">Esta é a avaliação física inicial do aluno. Para acompanhar a evolução e criar novas avaliações, acesse o módulo "Avaliações Físicas" após salvar o cadastro do aluno.</p>
-                      </div>
-                    </div>
-                  </div>
                 </div>
               )}
 
@@ -1086,8 +985,6 @@ function AlunoForm({ aluno, onSalvar, onCancelar }) {
                   </div>
                 </div>
               )}
-
-
             </div>
           </div>
 

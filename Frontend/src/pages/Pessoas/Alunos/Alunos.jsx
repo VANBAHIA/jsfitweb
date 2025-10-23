@@ -51,16 +51,18 @@ function Alunos() {
     setMostrarForm(true);
   };
 
-  const handleEditarAluno = async (aluno) => {
-    try {
-      const resposta = await alunosService.buscarPorId(aluno.id);
-      console.log('📥 Aluno completo:', resposta);
-      setAlunoSelecionado(resposta.data.data);
-      setMostrarForm(true);
-    } catch (error) {
-      alert('Erro ao carregar dados do aluno: ' + error.message);
-    }
-  };
+const handleEditarAluno = async (aluno) => {
+  try {
+    const resposta = await alunosService.buscarPorId(aluno.id);
+    console.log('📥 Aluno completo:', resposta);
+    
+    setAlunoSelecionado(resposta); // 👈 REMOVA O .data
+    setMostrarForm(true);
+  } catch (error) {
+    console.error('❌ Erro completo:', error);
+    alert('Erro ao carregar dados do aluno: ' + error.message);
+  }
+};
 
   const handleSalvarAluno = async (dados) => {
     try {

@@ -7,9 +7,7 @@ class AvaliacaoFisicaRepository {
    * Criar nova avaliação física
    */
   async criar(data) {
-    return prisma.avaliacaoFisica.create({
-      data,
-    });
+    return prisma.avaliacaoFisica.create({ data });
   }
 
   /**
@@ -35,15 +33,9 @@ class AvaliacaoFisicaRepository {
         ...(alunoId && { alunoId }),
       },
       include: {
-        aluno: {
-          include: {
-            pessoa: true,
-          },
-        },
+        aluno: { include: { pessoa: true } },
       },
-      orderBy: {
-        dataAvaliacao: 'desc',
-      },
+      orderBy: { dataAvaliacao: 'desc' },
     });
   }
 
@@ -54,11 +46,7 @@ class AvaliacaoFisicaRepository {
     return prisma.avaliacaoFisica.findFirst({
       where: { id, empresaId },
       include: {
-        aluno: {
-          include: {
-            pessoa: true,
-          },
-        },
+        aluno: { include: { pessoa: true } },
       },
     });
   }
@@ -71,11 +59,7 @@ class AvaliacaoFisicaRepository {
       where: { alunoId, empresaId },
       orderBy: { dataAvaliacao: 'desc' },
       include: {
-        aluno: {
-          include: {
-            pessoa: true,
-          },
-        },
+        aluno: { include: { pessoa: true } },
       },
     });
   }
@@ -84,9 +68,44 @@ class AvaliacaoFisicaRepository {
    * Atualizar avaliação
    */
   async atualizar(id, data, empresaId) {
-    return prisma.avaliacaoFisica.updateMany({
-      where: { id, empresaId },
-      data,
+    if (!empresaId) throw new Error('empresaId é obrigatório');
+    if (!id) throw new Error('id é obrigatório');
+
+    // Remove campos que não devem ser atualizados
+    const { id: _, empresaId: __, ...dadosLimpos } = data;
+
+    // 🧠 Tratamento da data da avaliação
+    let dataAvaliacao = dadosLimpos.dataAvaliacao;
+    if (!dataAvaliacao) {
+      dataAvaliacao = new Date();
+    } else if (typeof dataAvaliacao === 'string') {
+      dataAvaliacao = new Date(dataAvaliacao);
+    }
+
+    // Garante que a data é válida
+    if (isNaN(dataAvaliacao)) {
+      throw new Error('dataAvaliacao inválida');
+    }
+
+    // 🗓️ Define proximaAvaliacao (+90 dias, se não vier informada)
+    let proximaAvaliacao = dadosLimpos.proximaAvaliacao
+      ? new Date(dadosLimpos.proximaAvaliacao)
+      : new Date(new Date(dataAvaliacao).setDate(dataAvaliacao.getDate() + 90));
+
+    // Garante que a próxima avaliação também seja válida
+    if (isNaN(proximaAvaliacao)) {
+      proximaAvaliacao = new Date(dataAvaliacao.getTime() + 90 * 24 * 60 * 60 * 1000);
+    }
+
+    return prisma.avaliacaoFisica.update({
+      where: { id },
+      data: {
+        ...dadosLimpos,
+        dataAvaliacao,
+        proximaAvaliacao,
+        empresaId,
+        updatedAt: new Date(),
+      },
     });
   }
 
@@ -100,7 +119,7 @@ class AvaliacaoFisicaRepository {
   }
 
   /**
-   * Buscar evolução do aluno (peso, imc, percentualGordura etc.)
+   * Buscar evolução do aluno
    */
   async buscarEvolucao(alunoId, empresaId, parametros = ['peso', 'imc', 'percentualGordura']) {
     return prisma.avaliacaoFisica.findMany({
